@@ -61,31 +61,43 @@
         const imageData = ctx1.getImageData(0, 0, canvas1.width, canvas1.height);
         const data = imageData.data;
         const svgGroup = document.getElementById('3-cyan')  
-        for (let i = 0; i < data.length; i += 4) {
-            let x = i/4%640;
-            let y = Math.floor(i/(4*640));
-            if (x%8 === 0 && y%8 === 0) {
-                addDot(svgGroup, x, y, data[i]/80)
+        for (let x = 0; x < canvas1.width; x++) {
+            for (let y = 0; y < canvas1.height; y++) {
+                let rx = Math.floor((Math.random()-0.5)*2 + 0.5)
+                let ry = Math.floor((Math.random()-0.5)*2 + 0.5)
+                if(x+rx < 0 || x+rx > canvas1.width) {rx = 0;}
+                if(y+ry < 0 || y+ry > canvas1.height) {ry = 0;}
+                const i = (y)*canvas1.width*4 + (x)*4
+                const ri = (y+ry)*canvas1.width*4 + (x+rx)*4
+                if (x%8 === 0 && y%8 === 0 ) {
+                    addDot(svgGroup, x+rx, y+ry, data[ri]/80)
+                }
+                data[i + 1] = 255; // M (+ 1)
+                data[i + 2] = 255; // Y (+ 2)
+                data[i] = 255 - data[i]; // C (+ 0)
             }
-            data[i + 1] = 255; // M (+ 1)
-            data[i + 2] = 255; // Y (+ 2)
-            data[i] = 255 - data[i]; // C (+ 0)
         }
         ctxC.putImageData(imageData, 0, 0);
     };
     const magenta = () => {
         const imageData = ctx1.getImageData(0, 0, canvas1.width, canvas1.height);
         const data = imageData.data;
-        const svgGroup = document.getElementById('2-magenta')  
-        for (let i = 0; i < data.length; i += 4) {
-            let x = i/4%640;
-            let y = Math.floor(i/(4*640));
-            if (x%8 === 0 && y%8 === 0) {
-                addDot(svgGroup, x, y, data[i + 1]/80)
+        const svgGroup = document.getElementById('2-magenta')
+        for (let x = 0; x < canvas1.width; x++) {
+            for (let y = 0; y < canvas1.height; y++) {
+                let rx = Math.floor((Math.random()-0.5)*2 + 0.5)
+                let ry = Math.floor((Math.random()-0.5)*2 + 0.5)
+                if(x+rx < 0 || x+rx > canvas1.width) {rx = 0;}
+                if(y+ry < 0 || y+ry > canvas1.height) {ry = 0;}
+                const i = (y)*canvas1.width*4 + (x)*4
+                const ri = (y+ry)*canvas1.width*4 + (x+rx)*4
+                if (x%8 === 0 && y%8 === 0 ) {
+                    addDot(svgGroup, x+rx, y+ry, data[ri + 1]/80)
+                }
+                data[i] = 255; // C (+ 0)
+                data[i + 2] = 255; // Y (+ 2)
+                data[i + 1] =  255 - data[i + 1] // M (+ 1)
             }
-            data[i] = 255; // C (+ 0)
-            data[i + 2] = 255; // Y (+ 2)
-            data[i + 1] =  255 - data[i + 1] // M (+ 1)
         }
         ctxM.putImageData(imageData, 0, 0);
     };
@@ -93,15 +105,21 @@
         const imageData = ctx1.getImageData(0, 0, canvas1.width, canvas1.height);
         const data = imageData.data;
         const svgGroup = document.getElementById('1-yellow')  
-        for (let i = 0; i < data.length; i += 4) {
-            let x = i/4%640;
-            let y = Math.floor(i/(4*640));
-            if (x%8 === 0 && y%8 === 0 ) {
-                addDot(svgGroup, x, y, data[i + 2]/80)
+        for (let x = 0; x < canvas1.width; x++) {
+            for (let y = 0; y < canvas1.height; y++) {
+                let rx = Math.floor((Math.random()-0.5)*2 + 0.5)
+                let ry = Math.floor((Math.random()-0.5)*2 + 0.5)
+                if(x+rx < 0 || x+rx > canvas1.width) {rx = 0;}
+                if(y+ry < 0 || y+ry > canvas1.height) {ry = 0;}
+                const i = (y)*canvas1.width*4 + (x)*4
+                const ri = (y+ry)*canvas1.width*4 + (x+rx)*4
+                if (x%8 === 0 && y%8 === 0 ) {
+                    addDot(svgGroup, x+rx, y+ry, data[ri + 2]/80)
+                }
+                data[i] = 255; // C (+ 0)
+                data[i + 1] =  255; // M (+ 1)
+                data[i + 2] = 255 - data[i + 2]; // Y (+ 2)
             }
-            data[i] = 255; // C (+ 0)
-            data[i + 1] =  255; // M (+ 1)
-            data[i + 2] = 255 - data[i + 2]; // Y (+ 2)
         }
         ctxY.putImageData(imageData, 0, 0);
     };
