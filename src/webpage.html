@@ -6,7 +6,7 @@
         <input type="file" accept="image/*" name="image" id="file" onchange="loadFile(event)" style="display: none;">
         <label for="file" style="cursor: pointer;">Upload Image</label>
         <img id="output" width="640" height="360" />
-        <canvas id="canvas" width="640" height="360"></canvas>
+        <canvas id="canvas" width="160" height="90"></canvas>
         <svg style="background-color:#fff; stroke-linecap:round; stroke-linejoin:round" width="640" height="360" xmlns="http://www.w3.org/2000/svg">
             <g id="1-yellow" stroke="yellow" fill="yellow" style="mix-blend-mode: multiply" >
             </g>
@@ -42,13 +42,13 @@ function floydSteinbergDithering(imageData, width, height) {
         imageData.data[index + 1] = newG;
         imageData.data[index + 2] = newB;
         if (!newR) {
-            addDot(svgGroupC, x*2, y*2, (512 - oldR)/500)
+            addDot(svgGroupC, x*4, y*4, (512 - oldR)/200)
         }
         if (!newG) {
-            addDot(svgGroupM, x*2, y*2, (512 - oldG)/500)
+            addDot(svgGroupM, x*4, y*4, (512 - oldG)/200)
         }
         if (!newB) {
-            addDot(svgGroupY, x*2, y*2, (512 - oldB)/500)
+            addDot(svgGroupY, x*4, y*4, (512 - oldB)/200)
         }
   
         // Calculate the error
