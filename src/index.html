@@ -103,11 +103,12 @@ function floydSteinbergDithering(imageData, width, height) {
   };
   const addDot = (group, cx, cy, r) => {
     if(r === 0) return;
-    let cir = document.createElementNS('http://www.w3.org/2000/svg', 'circle')
-    cir.setAttribute('cx', cx+'');
-    cir.setAttribute('cy', cy+'');
-    cir.setAttribute('r', r+'');
-    cir.setAttribute('opacity', 1);
+    let cir = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+    cir.setAttribute('d', `M${cx-r} ${cy-r} 
+                            L${cx+r} ${cy-r} 
+                            L${cx+r} ${cy+r} 
+                            L${cx-r} ${cy+r} 
+                            L${cx-r} ${cy-r}`);
     group.appendChild(cir);
   }
 
