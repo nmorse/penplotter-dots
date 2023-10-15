@@ -18,6 +18,7 @@
             <g id="3-cyan" stroke="cyan" fill="cyan" style="mix-blend-mode: multiply" >
             </g>
         </svg>
+        <button id='download-svg' >download svg</button>
     </div>
 </body>
 <script>
@@ -57,26 +58,34 @@
         }
         ctx1.putImageData(imageData, 0, 0);
     };
+    const shapes = ['ridge', 'trough', 'peak', 'pit', 'slope', 'flat'];
+    var currentLine = {width:0, alpha:0, d:""};
+    var d = ""
+    const lineByFeature = (x, y, c_data) => { // mutates the current line
+        if (c_data < 150) return
+        if (d === "") {
+            d = `M ${x} ${y} `
+            return 
+        }
+        d += `L ${x} ${y} `
+    }
     const cyan = () => {
         const imageData = ctx1.getImageData(0, 0, canvas1.width, canvas1.height);
         const data = imageData.data;
-        const svgGroup = document.getElementById('3-cyan')  
+        const svgGroup = document.getElementById('3-cyan')
+
+        currentLine = {width:0, alpha:0, path:[]}
+        
         for (let x = 0; x < canvas1.width; x++) {
             for (let y = 0; y < canvas1.height; y++) {
-                let rx = Math.floor((Math.random()-0.5)*2 + 0.5)
-                let ry = Math.floor((Math.random()-0.5)*2 + 0.5)
-                if(x+rx < 0 || x+rx > canvas1.width) {rx = 0;}
-                if(y+ry < 0 || y+ry > canvas1.height) {ry = 0;}
                 const i = (y)*canvas1.width*4 + (x)*4
-                const ri = (y+ry)*canvas1.width*4 + (x+rx)*4
-                if (x%8 === 0 && y%8 === 0 ) {
-                    addDot(svgGroup, x+rx, y+ry, data[ri]/80)
-                }
+                currentLine = lineByFeature(x, y, 255-data[i])
                 data[i + 1] = 255; // M (+ 1)
                 data[i + 2] = 255; // Y (+ 2)
                 data[i] = 255 - data[i]; // C (+ 0)
             }
         }
+        addLine(svgGroup, d, 0.2, 1)
         ctxC.putImageData(imageData, 0, 0);
     };
     const magenta = () => {
@@ -123,6 +132,15 @@
         }
         ctxY.putImageData(imageData, 0, 0);
     };
+
+    const addLine = (group, d, strokeWidth, opacity) => {
+        if(d === "") return;
+        let path = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+        path.setAttribute('d', d);
+        path.setAttribute('stroke-width', strokeWidth+'');
+        path.setAttribute('opacity', opacity+'');
+        group.appendChild(path);
+    }
     const addDot = (group, cx, cy, r) => {
         if(r === 0) return;
         let cir = document.createElementNS('http://www.w3.org/2000/svg', 'circle')
@@ -132,5 +150,33 @@
         cir.setAttribute('opacity', r/3+'');
         group.appendChild(cir);
     }
+
+const downloadSVG = () => {
+  // since React will not do namespaced attributes (e.g. inkscape:label="0-Yellow"), so....
+  svg = document.getElementsByTagName("svg")[0];
+  svg.setAttribute("xmlns:inkscape", "http://www.inkscape.org/namespaces/inkscape");
+ 
+  const svgtext = svg.outerHTML;
+  if (svgtext) {
+    const blob = new Blob([svgtext], { type: "image/svg+xml" });
+    downloadBlob(blob, `dither_test.svg`);
+  }
+};
+  function downloadBlob(blob, filename) {
+    const objectUrl = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = objectUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    setTimeout(() => URL.revokeObjectURL(objectUrl), 5000);
+  }
+
+    document.getElementById("download-svg").addEventListener("click", downloadSVG);
+
+
 </script>
 </html>
