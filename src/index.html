@@ -7,11 +7,11 @@
     <label for="file" style="cursor: pointer;">Upload Image</label>
     <img id="output" width="604" height="386" />
     <canvas id="canvas" width="151" height="95.5"></canvas>
-    <svg style="background-color:#fff; stroke-linecap:round; stroke-linejoin:round"
+    <svg style="background-color:#fff; stroke-linecap:round; stroke-linejoin:round; stroke-width:3;"
          width="604" height="386"
       xmlns="http://www.w3.org/2000/svg">
       <g id="0-registration" inkscape:label="0-registration" inkscape:groupmode="layer" stroke="black" fill="none">
-        <path d="M0 0 L604 0 L604 386 L0 386 L0 0" />
+        <path d="M0.5 0.5 L603 0.5 L603 385 L0.5 385 L0.5 0.5" />
       </g>
       <g id="1-yellow" inkscape:label="1-yellow" inkscape:groupmode="layer" stroke="yellow" fill="yellow"
         style="mix-blend-mode: multiply">
@@ -93,12 +93,16 @@
 
   const canvas = document.getElementById('canvas');
   const ctx = canvas.getContext('2d');
+  let fileName = ''
 
   const image = new Image();
   var loadFile = function (event) {
     image.src = URL.createObjectURL(event.target.files[0]);
     var imageEle = document.getElementById('output');
     imageEle.src = URL.createObjectURL(event.target.files[0]);
+    //console.log(event.target.files[0])
+    fileName = event.target.files[0].name.slice(0, event.target.files[0].name.indexOf('.'))
+    console.log(fileName)
   };
   image.onload = () => {
     const sw = 151 // 160
@@ -116,11 +120,8 @@
   const addDot = (group, cx, cy, r) => {
     if (r === 0) return;
     let cir = document.createElementNS('http://www.w3.org/2000/svg', 'path')
-    cir.setAttribute('d', `M${cx - r} ${cy - r} 
-                            L${cx + r} ${cy - r} 
-                            L${cx + r} ${cy + r} 
-                            L${cx - r} ${cy + r} 
-                            L${cx - r} ${cy - r}`);
+    // cir.setAttribute('d', `M${cx - r} ${cy - r} L${cx + r} ${cy - r} L${cx + r} ${cy + r} L${cx - r} ${cy + r} L${cx - r} ${cy - r}`);
+    cir.setAttribute('d', `M${cx} ${cy} L${cx + 0.01} ${cy - 0.01}`);
     group.appendChild(cir);
   }
 
@@ -132,7 +133,7 @@
     const svgtext = svg.outerHTML;
     if (svgtext) {
       const blob = new Blob([svgtext], { type: "image/svg+xml" });
-      downloadBlob(blob, `dither_test.svg`);
+      downloadBlob(blob, `dither_dots_${fileName}.svg`);
     }
   };
   function downloadBlob(blob, filename) {
