@@ -2,60 +2,68 @@
 <head>
 </head>
 <body>
-    <div>
-        <input type="file" accept="image/*" name="image" id="file" onchange="loadFile(event)" style="display: none;">
-        <label for="file" style="cursor: pointer;">Upload Image</label>
-        <img id="output" width="640" height="360" />
-        <canvas id="canvas" width="160" height="90"></canvas>
-        <svg style="background-color:#fff; stroke-linecap:round; stroke-linejoin:round" width="640" height="360" xmlns="http://www.w3.org/2000/svg">
-            <g id="1-yellow" stroke="yellow" fill="yellow" style="mix-blend-mode: multiply" >
-            </g>
-            <g id="2-magenta" stroke="magenta" fill="magenta" style="mix-blend-mode: multiply" >
-            </g>
-            <g id="3-cyan" stroke="cyan" fill="cyan" style="mix-blend-mode: multiply" >
-            </g>
-        </svg>
-        <button id='download-svg' >download svg</button>
-    </div>
+  <div>
+    <input type="file" accept="image/*" name="image" id="file" onchange="loadFile(event)" style="display: none;">
+    <label for="file" style="cursor: pointer;">Upload Image</label>
+    <img id="output" width="604" height="386" />
+    <canvas id="canvas" width="151" height="95.5"></canvas>
+    <svg style="background-color:#fff; stroke-linecap:round; stroke-linejoin:round"
+         width="604" height="386"
+      xmlns="http://www.w3.org/2000/svg">
+      <g id="0-registration" inkscape:label="0-registration" inkscape:groupmode="layer" stroke="black" fill="none">
+        <path d="M0 0 L604 0 L604 386 L0 386 L0 0" />
+      </g>
+      <g id="1-yellow" inkscape:label="1-yellow" inkscape:groupmode="layer" stroke="yellow" fill="yellow"
+        style="mix-blend-mode: multiply">
+      </g>
+      <g id="2-magenta" inkscape:label="2-magenta" inkscape:groupmode="layer" stroke="magenta" fill="magenta"
+        style="mix-blend-mode: multiply">
+      </g>
+      <g id="3-cyan" inkscape:label="3-cyan" inkscape:groupmode="layer" stroke="cyan" fill="cyan"
+        style="mix-blend-mode: multiply">
+      </g>
+    </svg>
+    <button id='download-svg'>download svg</button>
+  </div>
 </body>
 <script>
-const svgGroupY = document.getElementById('1-yellow')
-const svgGroupM = document.getElementById('2-magenta')
-const svgGroupC = document.getElementById('3-cyan')
-function floydSteinbergDithering(imageData, width, height) {
+  const svgGroupY = document.getElementById('1-yellow')
+  const svgGroupM = document.getElementById('2-magenta')
+  const svgGroupC = document.getElementById('3-cyan')
+  function floydSteinbergDithering(imageData, width, height) {
     const imageDataCopy = new ImageData(new Uint8ClampedArray(imageData.data), width, height);
-  
+
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
         const index = (y * width + x) * 4;
         const oldR = imageDataCopy.data[index];
         const oldG = imageDataCopy.data[index + 1];
         const oldB = imageDataCopy.data[index + 2];
-  
+
         // Find the closest color (0 or 255) for each channel
         const newR = oldR > 128 ? 255 : 0;
         const newG = oldG > 128 ? 255 : 0;
         const newB = oldB > 128 ? 255 : 0;
-  
+
         // Set the new color
         imageData.data[index] = newR;
         imageData.data[index + 1] = newG;
         imageData.data[index + 2] = newB;
         if (!newR) {
-            addDot(svgGroupC, x*4, y*4, (512 - oldR)/200)
+          addDot(svgGroupC, x * 4 + 2, y * 4 + 4, 1) // sqrcolor(512 - oldR) / 256)
         }
         if (!newG) {
-            addDot(svgGroupM, x*4, y*4, (512 - oldG)/200)
+          addDot(svgGroupM, x * 4 + 2, y * 4 + 4, 1) // sqrcolor(512 - oldG) / 256)
         }
         if (!newB) {
-            addDot(svgGroupY, x*4, y*4, (512 - oldB)/200)
+          addDot(svgGroupY, x * 4 + 2, y * 4 + 4, 1) // sqrcolor(512 - oldB) / 256)
         }
-  
+
         // Calculate the error
         const errorR = oldR - newR;
         const errorG = oldG - newG;
         const errorB = oldB - newB;
-  
+
         // Distribute the error to neighboring pixels
         if (x + 1 < width) {
           distributeError(imageDataCopy, width, x + 1, y, errorR, errorG, errorB, 7 / 16);
@@ -72,57 +80,61 @@ function floydSteinbergDithering(imageData, width, height) {
       }
     }
   }
-  
+  const sqrcolor = (n) => {
+    const norm = n/512
+    return (norm * norm * norm * norm) * 512
+  }
   function distributeError(imageData, width, x, y, errorR, errorG, errorB, factor) {
     const index = (y * width + x) * 4;
     imageData.data[index] = Math.max(0, Math.min(255, imageData.data[index] + errorR * factor));
     imageData.data[index + 1] = Math.max(0, Math.min(255, imageData.data[index + 1] + errorG * factor));
     imageData.data[index + 2] = Math.max(0, Math.min(255, imageData.data[index + 2] + errorB * factor));
   }
-  
+
   const canvas = document.getElementById('canvas');
   const ctx = canvas.getContext('2d');
-  
+
   const image = new Image();
   var loadFile = function (event) {
-        image.src = URL.createObjectURL(event.target.files[0]);
-        var imageEle = document.getElementById('output');
-        imageEle.src = URL.createObjectURL(event.target.files[0]);
+    image.src = URL.createObjectURL(event.target.files[0]);
+    var imageEle = document.getElementById('output');
+    imageEle.src = URL.createObjectURL(event.target.files[0]);
   };
   image.onload = () => {
-    const sw = 160
-    const sh = 90
+    const sw = 151 // 160
+    const sh = 95 // 90
 
     // canvas.width = 320 //image.width;
     // canvas.height = 180//image.height;
+    // width="604" height="386"
     ctx.drawImage(image, 0, 0, sw, sh)//, 640, 360);
-  
+
     const imageData = ctx.getImageData(0, 0, sw, sh);
     floydSteinbergDithering(imageData, sw, sh);
     ctx.putImageData(imageData, 0, 0);
   };
   const addDot = (group, cx, cy, r) => {
-    if(r === 0) return;
+    if (r === 0) return;
     let cir = document.createElementNS('http://www.w3.org/2000/svg', 'path')
-    cir.setAttribute('d', `M${cx-r} ${cy-r} 
-                            L${cx+r} ${cy-r} 
-                            L${cx+r} ${cy+r} 
-                            L${cx-r} ${cy+r} 
-                            L${cx-r} ${cy-r}`);
+    cir.setAttribute('d', `M${cx - r} ${cy - r} 
+                            L${cx + r} ${cy - r} 
+                            L${cx + r} ${cy + r} 
+                            L${cx - r} ${cy + r} 
+                            L${cx - r} ${cy - r}`);
     group.appendChild(cir);
   }
 
-const downloadSVG = () => {
-  // since React will not do namespaced attributes (e.g. inkscape:label="0-Yellow"), so....
-  svg = document.getElementsByTagName("svg")[0];
-  svg.setAttribute("xmlns:inkscape", "http://www.inkscape.org/namespaces/inkscape");
- 
-  const svgtext = svg.outerHTML;
-  if (svgtext) {
-    const blob = new Blob([svgtext], { type: "image/svg+xml" });
-    downloadBlob(blob, `dither_test.svg`);
-  }
-};
+  const downloadSVG = () => {
+    // since React will not do namespaced attributes (e.g. inkscape:label="0-Yellow"), so....
+    svg = document.getElementsByTagName("svg")[0];
+    svg.setAttribute("xmlns:inkscape", "http://www.inkscape.org/namespaces/inkscape");
+
+    const svgtext = svg.outerHTML;
+    if (svgtext) {
+      const blob = new Blob([svgtext], { type: "image/svg+xml" });
+      downloadBlob(blob, `dither_test.svg`);
+    }
+  };
   function downloadBlob(blob, filename) {
     const objectUrl = URL.createObjectURL(blob);
 
@@ -136,7 +148,8 @@ const downloadSVG = () => {
     setTimeout(() => URL.revokeObjectURL(objectUrl), 5000);
   }
 
-    document.getElementById("download-svg").addEventListener("click", downloadSVG);
+  document.getElementById("download-svg").addEventListener("click", downloadSVG);
 
-  </script>
-  </html>
+</script>
+
+</html>
