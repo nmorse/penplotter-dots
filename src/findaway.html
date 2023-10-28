@@ -11,18 +11,18 @@
     <label for="file" style="cursor: pointer;">Upload Image</label>
     <img id="output" width="604" height="386" />
     <canvas id="canvas" width="151" height="95.5"></canvas>
-    <svg style="background-color:#fff; stroke-linecap:round; stroke-linejoin:round; stroke-width:4;" width="604"
+    <svg style="background-color:#fff; stroke-linecap:round; stroke-linejoin:round; stroke-width:0.5;" width="604"
       height="386" xmlns="http://www.w3.org/2000/svg">
       <g id="0-registration" inkscape:label="0-registration" inkscape:groupmode="layer" stroke="black" fill="none">
         <path d="M0.5 0.5 L603 0.5 L603 385 L0.5 385 L0.5 0.5" />
       </g>
-      <g id="1-yellow" inkscape:label="1-yellow" inkscape:groupmode="layer" stroke="yellow" fill="yellow"
+      <g id="1-yellow" inkscape:label="1-yellow" inkscape:groupmode="layer" stroke="yellow" fill="none"
         style="mix-blend-mode: multiply">
       </g>
-      <g id="2-magenta" inkscape:label="2-magenta" inkscape:groupmode="layer" stroke="magenta" fill="magenta"
+      <g id="2-magenta" inkscape:label="2-magenta" inkscape:groupmode="layer" stroke="magenta" fill="none"
         style="mix-blend-mode: multiply">
       </g>
-      <g id="3-cyan" inkscape:label="3-cyan" inkscape:groupmode="layer" stroke="cyan" fill="cyan"
+      <g id="3-cyan" inkscape:label="3-cyan" inkscape:groupmode="layer" stroke="cyan" fill="none"
         style="mix-blend-mode: multiply">
       </g>
     </svg>
@@ -35,12 +35,13 @@
   let dpos = [1, 0];
   let penDown = false
   const r = 5;
-  let width = 0 // get from image once loaded
+  let width = 0 // get from image size once loaded
   let height = 0
   const getIndex = (x, y) => (y * width + x) * 4;
-  const svgGroupY = document.getElementById('1-yellow')
-  const svgGroupM = document.getElementById('2-magenta')
-  const svgGroupC = document.getElementById('3-cyan')
+  let svgGroup = []
+  svgGroup[2] = document.getElementById('1-yellow')
+  svgGroup[1] = document.getElementById('2-magenta')
+  svgGroup[0] = document.getElementById('3-cyan')
   function floydSteinbergDithering(imageData, width, height) {
     const imageDataCopy = new ImageData(new Uint8ClampedArray(imageData.data), width, height);
 
@@ -61,13 +62,13 @@
         imageData.data[index + 1] = newG;
         imageData.data[index + 2] = newB;
         if (!newR) {
-          addDot(svgGroupC, x * 4 + 2, y * 4 + 4, 1) // sqrcolor(512 - oldR) / 256)
+          addDot(svgGroup[0], x * 4 + 2, y * 4 + 4, 1) // sqrcolor(512 - oldR) / 256)
         }
         if (!newG) {
-          addDot(svgGroupM, x * 4 + 2, y * 4 + 4, 1) // sqrcolor(512 - oldG) / 256)
+          addDot(svgGroup[1], x * 4 + 2, y * 4 + 4, 1) // sqrcolor(512 - oldG) / 256)
         }
         if (!newB) {
-          addDot(svgGroupY, x * 4 + 2, y * 4 + 4, 1) // sqrcolor(512 - oldB) / 256)
+          addDot(svgGroup[2], x * 4 + 2, y * 4 + 4, 1) // sqrcolor(512 - oldB) / 256)
         }
 
         // Calculate the error
@@ -128,7 +129,9 @@
     ctx.drawImage(image, 0, 0, sw, sh)//, 640, 360);
 
     const imageData = ctx.getImageData(0, 0, sw, sh);
+    findaway(imageData, threshold, stepsize, 0)
     findaway(imageData, threshold, stepsize, 1)
+    findaway(imageData, threshold, stepsize, 2)
     //floydSteinbergDithering(imageData, sw, sh);
     ctx.putImageData(imageData, 0, 0);
   };
@@ -160,7 +163,7 @@
 
   const lineComplete = (group) => {
     if (linePts.length < 1) return
-    if (linePts.length < 2) addDot(group, linePts[0], linePts[1], 1)
+    if (linePts.length < 2) addDot(group, linePts[0][0], linePts[0][1], 1)
     let line = document.createElementNS('http://www.w3.org/2000/svg', 'path')
     const firstPt = linePts.shift()
     line.setAttribute('d', `M${firstPt[0]} ${firstPt[1]} ${linePts.map(toSVG)}`);
@@ -201,8 +204,8 @@
       const x = Math.floor(Math.random() * width)
       const y = Math.floor(Math.random() * height)
       const i = getIndex(x, y)
-      console.log(i, x, y, channel, imArr.data[i + channel])
-      if (imArr.data[i + channel] >= threshold) {
+      // console.log(i, x, y, channel, imArr.data[i + channel])
+      if (imArr.data[i + channel] <= threshold) {
         return [x, y]
       }
     }
@@ -210,7 +213,7 @@
     for (x = 0; x < width; x++) {
       for (y = 0; y < height; y++) {
         const i = getIndex(x, y)
-        if(x === 50 && y === 60) console.log("", i, x, y, channel)
+        // if(x === 50 && y === 60) console.log("", i, x, y, channel)
         if (imArr.data[i + channel] <= threshold)
           return [x, y]
       }
@@ -225,6 +228,7 @@
       dpos[alteri] = (Math.random() > 0.5) ? -1 : 1;
     else dpos[alteri] = 0
   }
+  const inBounds = (x, y) => (x > 0 && y > 0 && x < width && y < height)
   const alterHoriz2 = () => {
     if (dpos[0] > 0 || dpos[0] < 0) {
       dpos[0] = 0
@@ -295,7 +299,7 @@
       let mpx = pos[0] + dpos[0]
       let mpy = pos[1] + dpos[1]
       const i = getIndex(mpx, mpy)
-      if (imArr.data[i + channel] < threshold) {
+      if (inBounds(mpx, mpy) && imArr.data[i + channel] <= threshold) {
         return [mpx, mpy, (ableToFlow === 1)]
       }
       alterHoriz2()
@@ -323,12 +327,14 @@
   const findaway = (imArr, threshold, stepsize, channel) => {
     penDown = false
     keepGoing = true
-    console.log("here", pos)
-    while (keepGoing) {
+    let rounds = 10000
+    while (keepGoing && rounds > 0) {
+      rounds--
       if (penDown) {
         const [nx, ny, flow] = findNext(imArr, threshold, channel)
         if (nx < 0 || ny < 0) {
-          lineComplete(svgGroupM)
+          lineComplete(svgGroup[channel])
+          penDown = false
           //console.log("line done at", pos)
           continue
         }
@@ -344,20 +350,17 @@
         pos[1] = ny
       }
       else {
-        console.log("penDown ", penDown)
         const [fx, fy] = findFirst(imArr, threshold, channel)
-        console.log("findFirst", fx, fy)
         if (fx < 0 || fy < 0) {
           keepGoing = false
           break
         }
         lineInit(fx * 2, fy * 2)
         const i = getIndex(fx, fy)
-        imArr.data[i + channel] = Math.max(0, imArr.data[i + channel] - threshold)
+        imArr.data[i + channel] = Math.min(255, imArr.data[i + channel] + stepsize)
         pos[0] = fx
         pos[1] = fy
         penDown = true
-        console.log("pendown", pos)
       }
     }
   }
