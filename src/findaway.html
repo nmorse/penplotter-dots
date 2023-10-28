@@ -1,0 +1,352 @@
+<html doctype="html5">
+
+<head>
+</head>
+
+<body>
+  <div>
+    <input type="number" id="jitter" name="jitter" />
+    <input type="file" accept="image/*" name="image" id="file" onchange="loadFile(event)" style="display: none;">
+    <label for="file" style="cursor: pointer;">Upload Image</label>
+    <img id="output" width="604" height="386" />
+    <canvas id="canvas" width="151" height="95.5"></canvas>
+    <svg style="background-color:#fff; stroke-linecap:round; stroke-linejoin:round; stroke-width:4;" width="604"
+      height="386" xmlns="http://www.w3.org/2000/svg">
+      <g id="0-registration" inkscape:label="0-registration" inkscape:groupmode="layer" stroke="black" fill="none">
+        <path d="M0.5 0.5 L603 0.5 L603 385 L0.5 385 L0.5 0.5" />
+      </g>
+      <g id="1-yellow" inkscape:label="1-yellow" inkscape:groupmode="layer" stroke="yellow" fill="yellow"
+        style="mix-blend-mode: multiply">
+      </g>
+      <g id="2-magenta" inkscape:label="2-magenta" inkscape:groupmode="layer" stroke="magenta" fill="magenta"
+        style="mix-blend-mode: multiply">
+      </g>
+      <g id="3-cyan" inkscape:label="3-cyan" inkscape:groupmode="layer" stroke="cyan" fill="cyan"
+        style="mix-blend-mode: multiply">
+      </g>
+    </svg>
+    <button id='download-svg'>download svg</button>
+  </div>
+</body>
+<script>
+
+  let pos = [0, 0];
+  let dpos = [1, 0];
+  let penDown = false
+  const r = 5;
+  let width = 5 
+  let height = 3
+  const getIndex = (x, y) => (y * width + x) * 4;
+  const svgGroupY = document.getElementById('1-yellow')
+  const svgGroupM = document.getElementById('2-magenta')
+  const svgGroupC = document.getElementById('3-cyan')
+  function floydSteinbergDithering(imageData, width, height) {
+    const imageDataCopy = new ImageData(new Uint8ClampedArray(imageData.data), width, height);
+
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const index = getIndex(x, y)
+        const oldR = imageDataCopy.data[index];
+        const oldG = imageDataCopy.data[index + 1];
+        const oldB = imageDataCopy.data[index + 2];
+
+        // Find the closest color (0 or 255) for each channel
+        const newR = oldR > 128 ? 255 : 0;
+        const newG = oldG > 128 ? 255 : 0;
+        const newB = oldB > 128 ? 255 : 0;
+
+        // Set the new color
+        imageData.data[index] = newR;
+        imageData.data[index + 1] = newG;
+        imageData.data[index + 2] = newB;
+        if (!newR) {
+          addDot(svgGroupC, x * 4 + 2, y * 4 + 4, 1) // sqrcolor(512 - oldR) / 256)
+        }
+        if (!newG) {
+          addDot(svgGroupM, x * 4 + 2, y * 4 + 4, 1) // sqrcolor(512 - oldG) / 256)
+        }
+        if (!newB) {
+          addDot(svgGroupY, x * 4 + 2, y * 4 + 4, 1) // sqrcolor(512 - oldB) / 256)
+        }
+
+        // Calculate the error
+        const errorR = oldR - newR;
+        const errorG = oldG - newG;
+        const errorB = oldB - newB;
+
+        // Distribute the error to neighboring pixels
+        if (x + 1 < width) {
+          distributeError(imageDataCopy, width, x + 1, y, errorR, errorG, errorB, 7 / 16);
+        }
+        if (x - 1 >= 0 && y + 1 < height) {
+          distributeError(imageDataCopy, width, x - 1, y + 1, errorR, errorG, errorB, 3 / 16);
+        }
+        if (y + 1 < height) {
+          distributeError(imageDataCopy, width, x, y + 1, errorR, errorG, errorB, 5 / 16);
+        }
+        if (x + 1 < width && y + 1 < height) {
+          distributeError(imageDataCopy, width, x + 1, y + 1, errorR, errorG, errorB, 1 / 16);
+        }
+      }
+    }
+  }
+  const sqrcolor = (n) => {
+    const norm = n / 512
+    return (norm * norm * norm * norm) * 512
+  }
+  function distributeError(imageData, width, x, y, errorR, errorG, errorB, factor) {
+    const index = (y * width + x) * 4;
+    imageData.data[index] = Math.max(0, Math.min(255, imageData.data[index] + errorR * factor));
+    imageData.data[index + 1] = Math.max(0, Math.min(255, imageData.data[index + 1] + errorG * factor));
+    imageData.data[index + 2] = Math.max(0, Math.min(255, imageData.data[index + 2] + errorB * factor));
+  }
+
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+  let fileName = ''
+
+  const image = new Image();
+  var loadFile = function (event) {
+    image.src = URL.createObjectURL(event.target.files[0]);
+    var imageEle = document.getElementById('output');
+    imageEle.src = URL.createObjectURL(event.target.files[0]);
+    //console.log(event.target.files[0])
+    fileName = event.target.files[0].name.slice(0, event.target.files[0].name.indexOf('.'))
+    console.log(fileName)
+  };
+  image.onload = () => {
+    const sw = 5 // 160
+    const sh = 3 // 90
+    // width = sw
+    // height = sh
+    // canvas.width = 320 //image.width;
+    // canvas.height = 180//image.height;
+    // width="604" height="386"
+    ctx.drawImage(image, 0, 0, sw, sh)//, 640, 360);
+
+    const imageData = ctx.getImageData(0, 0, sw, sh);
+    findaway(imageData, 128, 1)
+    //floydSteinbergDithering(imageData, sw, sh);
+    ctx.putImageData(imageData, 0, 0);
+  };
+  const addDot = (group, cx, cy, r) => {
+    if (r === 0) return;
+    let cir = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+    // cir.setAttribute('d', `M${cx - r} ${cy - r} L${cx + r} ${cy - r} L${cx + r} ${cy + r} L${cx - r} ${cy + r} L${cx - r} ${cy - r}`);
+    cir.setAttribute('d', `M${cx} ${cy} L${cx + 0.01} ${cy - 0.01}`);
+    group.appendChild(cir);
+  }
+  let firstLinePt = [0, 0]
+  let lastLinePt = [0, 0]
+  const lineInit = (x1, y1, x2, y2) => {
+    firstLinePt = [x1, y1]
+    lastLinePt = [x2, y2]
+  }
+
+  const lineExtend = (x2, y2) => {
+    lastLinePt = [x2, y2]
+  }
+
+  const lineComplete = (group) => {
+    let line = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+    // cir.setAttribute('d', `M${cx - r} ${cy - r} L${cx + r} ${cy - r} L${cx + r} ${cy + r} L${cx - r} ${cy + r} L${cx - r} ${cy - r}`);
+    line.setAttribute('d', `M${firstLinePt[0]} ${firstLinePt[1]} L${lastLinePt[0]} ${lastLinePt[1]}`);
+    group.appendChild(line);
+  }
+
+  const downloadSVG = () => {
+    // since React will not do namespaced attributes (e.g. inkscape:label="0-Yellow"), so....
+    svg = document.getElementsByTagName("svg")[0];
+    svg.setAttribute("xmlns:inkscape", "http://www.inkscape.org/namespaces/inkscape");
+
+    const svgtext = svg.outerHTML;
+    if (svgtext) {
+      const blob = new Blob([svgtext], { type: "image/svg+xml" });
+      downloadBlob(blob, `dither_dots_${fileName}.svg`);
+    }
+  };
+  function downloadBlob(blob, filename) {
+    const objectUrl = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = objectUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    setTimeout(() => URL.revokeObjectURL(objectUrl), 5000);
+  }
+
+  document.getElementById("download-svg").addEventListener("click", downloadSVG);
+
+  const findFirst = (imArr, theshold, channel) => {
+    let randomTries = 20
+    while (randomTries) {
+      randomTries--
+      const x = Math.floor(Math.random() * width)
+      const y = Math.floor(Math.random() * height)
+      const i = getIndex(x, y)
+      console.log(i, x, y, channel, imArr.data[i + channel])
+      if (imArr.data[i + channel] >= theshold) {
+        return [x, y]
+      }
+    }
+    console.log("findFirst failed random")
+    for (x = 0; x < width; x++) {
+      for (y = 0; y < height; y++) {
+        const i = getIndex(x, y)
+        if(x === 50 && y === 60) console.log("", i, x, y, channel)
+        if (imArr.data[i + channel] >= theshold)
+          return [x, y]
+      }
+    }
+    console.log("findFirst failed exaustive")
+    return [-1, -1];
+  }
+
+  const alterDir = () => {
+    const alteri = (Math.random() > 0.5) ? 0 : 1;
+    if (dpos[alteri] === 0)
+      dpos[alteri] = (Math.random() > 0.5) ? -1 : 1;
+    else dpos[alteri] = 0
+  }
+  const alterHoriz2 = () => {
+    if (dpos[0] > 0 || dpos[0] < 0) {
+      dpos[0] = 0
+      dpos[1] = (Math.random() > 0.5) ? 1 : -1;
+      return
+    }
+    if (dpos[1] > 0 || dpos[1] < 0) {
+      dpos[0] = (Math.random() > 0.5) ? 1 : -1;
+      dpos[1] = 0
+      return
+    }
+    dpos[0] = 0;
+    dpos[1] = (Math.random() > 0.5) ? 1 : -1;
+  }
+  const alterHoriz = () => {
+    if (dpos[0] > 0) {
+      dpos[0] = 0
+      dpos[1] = 1
+      return
+    }
+    if (dpos[0] < 0) {
+      dpos[0] = 0
+      dpos[1] = -1
+      return
+    }
+    if (dpos[1] > 0) {
+      dpos[1] = 0
+      dpos[0] = -1
+      return
+    }
+    if (dpos[1] < 0) {
+      dpos[1] = 0
+      dpos[0] = 1
+      return
+    }
+  }
+
+  const alterDiag = () => {
+    if (dpos[0] >= 0 && dpos[1] >= 0) {
+      dpos[0] = -1
+      dpos[1] = 1
+      return
+    }
+    if (dpos[0] <= 0 && dpos[1] >= 0) {
+      dpos[0] = -1
+      dpos[1] = -1
+      return
+    }
+    if (dpos[0] <= 0 && dpos[1] <= 0) {
+      dpos[0] = 1
+      dpos[1] = -1
+      return
+    }
+    if (dpos[0] >= 0 && dpos[1] <= 0) {
+      dpos[0] = 1
+      dpos[1] = 1
+      return
+    }
+  }
+
+  const findNext = (imArr, theshold, channel) => {
+    let ableToFlow = 0
+    while (ableToFlow < 12) {
+      ableToFlow++
+      // if (Math.random() > 0.95) {
+      //  alterDir()
+      // }
+      let mpx = pos[0] + dpos[0]
+      let mpy = pos[1] + dpos[1]
+      const i = getIndex(mpx, mpy)
+      if (imArr.data[i + channel] > theshold) {
+        return [mpx, mpy, (ableToFlow === 1)]
+      }
+      alterHoriz2()
+      // alterDiag()
+    }
+
+    let neighbors = 0
+    let lastX = 0
+    let lastY = 0
+    for (x = pos[0] - 1; x < pos[0] + 1; x++) {
+      for (y = pos[1] - 1; y < pos[1] + 1; y++) {
+        const i = getIndex(x, y)
+        if (x >= 0 && y >= 0 && x < width && y < height && imArr[i + channel] >= theshold) {
+          neighbors++
+          lastX = x
+          lastY = y
+        }
+      }
+    }
+    if (neighbors >= 1) return [lastX, lastY, false]
+    penDown = false
+    return [-1, -1, false]
+  }
+
+  const findaway = (imArr, theshold, channel) => {
+    penDown = false
+    keepGoing = true
+    console.log("here", pos)
+    while (keepGoing) {
+      if (penDown) {
+        const [nx, ny, flow] = findNext(imArr, theshold, channel)
+        if (nx < 0 || ny < 0) {
+          lineComplete(svgGroupM)
+          //console.log("line done at", pos)
+          continue
+        }
+        if (flow) {
+          lineExtend(nx * 2, ny * 2)  
+        }
+        else {
+          lineInit(pos[0] * 2, pos[1] * 2, nx * 2, ny * 2)
+        }
+        const i = getIndex(pos[0], pos[1])
+        imArr.data[i + channel] = Math.max(0, imArr.data[i + channel] - theshold)
+        pos[0] = nx
+        pos[1] = ny
+      }
+      else {
+        console.log("penDown ", penDown)
+        const [fx, fy] = findFirst(imArr, theshold, channel)
+        console.log("findFirst", fx, fy)
+        if (fx < 0 || fy < 0) {
+          keepGoing = false
+          break
+        }
+        lineInit(fx * 2, fy * 2, fx * 2, fy * 2)
+        const i = getIndex(fx, fy)
+        imArr.data[i + channel] = Math.max(0, imArr.data[i + channel] - theshold)
+        pos[0] = fx
+        pos[1] = fy
+        penDown = true
+        console.log("pendown", pos)
+      }
+    }
+  }
+</script>
+
+</html>
