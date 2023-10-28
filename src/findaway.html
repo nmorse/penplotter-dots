@@ -5,7 +5,8 @@
 
 <body>
   <div>
-    <input type="number" id="jitter" name="jitter" />
+    <input style="width: 40px" type="number" value="128" id="threshold" name="threshold" />
+    <input style="width: 40px" type="number" value="64" id="stepsize" name="stepsize" />
     <input type="file" accept="image/*" name="image" id="file" onchange="loadFile(event)" style="display: none;">
     <label for="file" style="cursor: pointer;">Upload Image</label>
     <img id="output" width="604" height="386" />
@@ -34,8 +35,8 @@
   let dpos = [1, 0];
   let penDown = false
   const r = 5;
-  let width = 5 
-  let height = 3
+  let width = 0 // get from image once loaded
+  let height = 0
   const getIndex = (x, y) => (y * width + x) * 4;
   const svgGroupY = document.getElementById('1-yellow')
   const svgGroupM = document.getElementById('2-magenta')
@@ -115,17 +116,19 @@
     console.log(fileName)
   };
   image.onload = () => {
-    const sw = 5 // 160
-    const sh = 3 // 90
-    // width = sw
-    // height = sh
+    const stepsize = parseInt(document.getElementById('stepsize').value, 10)
+    const threshold = parseInt(document.getElementById('threshold').value, 10)
+    const sw = image.width
+    const sh = image.height
+    width = sw
+    height = sh
     // canvas.width = 320 //image.width;
     // canvas.height = 180//image.height;
     // width="604" height="386"
     ctx.drawImage(image, 0, 0, sw, sh)//, 640, 360);
 
     const imageData = ctx.getImageData(0, 0, sw, sh);
-    findaway(imageData, 128, 1)
+    findaway(imageData, threshold, stepsize, 1)
     //floydSteinbergDithering(imageData, sw, sh);
     ctx.putImageData(imageData, 0, 0);
   };
@@ -136,22 +139,33 @@
     cir.setAttribute('d', `M${cx} ${cy} L${cx + 0.01} ${cy - 0.01}`);
     group.appendChild(cir);
   }
-  let firstLinePt = [0, 0]
-  let lastLinePt = [0, 0]
-  const lineInit = (x1, y1, x2, y2) => {
-    firstLinePt = [x1, y1]
-    lastLinePt = [x2, y2]
+  let linePts = []
+  const lineInit = (x1, y1) => {
+    linePts = []
+    linePts.push([x1, y1])
   }
 
   const lineExtend = (x2, y2) => {
-    lastLinePt = [x2, y2]
+    if (linePts.length < 2) {
+      lineCorner(x2, x2)
+    }
+    linePts[linePts.length - 1] = [x2, y2]
   }
+  
+  const lineCorner = (x2, y2) => {
+    linePts.push([x2, y2])
+  }
+  
+  const toSVG = (pt) => (`L${pt[0]} ${pt[1]}`)
 
   const lineComplete = (group) => {
+    if (linePts.length < 1) return
+    if (linePts.length < 2) addDot(group, linePts[0], linePts[1], 1)
     let line = document.createElementNS('http://www.w3.org/2000/svg', 'path')
-    // cir.setAttribute('d', `M${cx - r} ${cy - r} L${cx + r} ${cy - r} L${cx + r} ${cy + r} L${cx - r} ${cy + r} L${cx - r} ${cy - r}`);
-    line.setAttribute('d', `M${firstLinePt[0]} ${firstLinePt[1]} L${lastLinePt[0]} ${lastLinePt[1]}`);
+    const firstPt = linePts.shift()
+    line.setAttribute('d', `M${firstPt[0]} ${firstPt[1]} ${linePts.map(toSVG)}`);
     group.appendChild(line);
+    linePts = []
   }
 
   const downloadSVG = () => {
@@ -180,7 +194,7 @@
 
   document.getElementById("download-svg").addEventListener("click", downloadSVG);
 
-  const findFirst = (imArr, theshold, channel) => {
+  const findFirst = (imArr, threshold, channel) => {
     let randomTries = 20
     while (randomTries) {
       randomTries--
@@ -188,7 +202,7 @@
       const y = Math.floor(Math.random() * height)
       const i = getIndex(x, y)
       console.log(i, x, y, channel, imArr.data[i + channel])
-      if (imArr.data[i + channel] >= theshold) {
+      if (imArr.data[i + channel] >= threshold) {
         return [x, y]
       }
     }
@@ -197,7 +211,7 @@
       for (y = 0; y < height; y++) {
         const i = getIndex(x, y)
         if(x === 50 && y === 60) console.log("", i, x, y, channel)
-        if (imArr.data[i + channel] >= theshold)
+        if (imArr.data[i + channel] <= threshold)
           return [x, y]
       }
     }
@@ -271,7 +285,7 @@
     }
   }
 
-  const findNext = (imArr, theshold, channel) => {
+  const findNext = (imArr, threshold, channel) => {
     let ableToFlow = 0
     while (ableToFlow < 12) {
       ableToFlow++
@@ -281,7 +295,7 @@
       let mpx = pos[0] + dpos[0]
       let mpy = pos[1] + dpos[1]
       const i = getIndex(mpx, mpy)
-      if (imArr.data[i + channel] > theshold) {
+      if (imArr.data[i + channel] < threshold) {
         return [mpx, mpy, (ableToFlow === 1)]
       }
       alterHoriz2()
@@ -294,7 +308,7 @@
     for (x = pos[0] - 1; x < pos[0] + 1; x++) {
       for (y = pos[1] - 1; y < pos[1] + 1; y++) {
         const i = getIndex(x, y)
-        if (x >= 0 && y >= 0 && x < width && y < height && imArr[i + channel] >= theshold) {
+        if (x >= 0 && y >= 0 && x < width && y < height && imArr[i + channel] <= threshold) {
           neighbors++
           lastX = x
           lastY = y
@@ -306,13 +320,13 @@
     return [-1, -1, false]
   }
 
-  const findaway = (imArr, theshold, channel) => {
+  const findaway = (imArr, threshold, stepsize, channel) => {
     penDown = false
     keepGoing = true
     console.log("here", pos)
     while (keepGoing) {
       if (penDown) {
-        const [nx, ny, flow] = findNext(imArr, theshold, channel)
+        const [nx, ny, flow] = findNext(imArr, threshold, channel)
         if (nx < 0 || ny < 0) {
           lineComplete(svgGroupM)
           //console.log("line done at", pos)
@@ -322,24 +336,24 @@
           lineExtend(nx * 2, ny * 2)  
         }
         else {
-          lineInit(pos[0] * 2, pos[1] * 2, nx * 2, ny * 2)
+          lineCorner(nx * 2, ny * 2)
         }
         const i = getIndex(pos[0], pos[1])
-        imArr.data[i + channel] = Math.max(0, imArr.data[i + channel] - theshold)
+        imArr.data[i + channel] = Math.min(255, imArr.data[i + channel] + stepsize)
         pos[0] = nx
         pos[1] = ny
       }
       else {
         console.log("penDown ", penDown)
-        const [fx, fy] = findFirst(imArr, theshold, channel)
+        const [fx, fy] = findFirst(imArr, threshold, channel)
         console.log("findFirst", fx, fy)
         if (fx < 0 || fy < 0) {
           keepGoing = false
           break
         }
-        lineInit(fx * 2, fy * 2, fx * 2, fy * 2)
+        lineInit(fx * 2, fy * 2)
         const i = getIndex(fx, fy)
-        imArr.data[i + channel] = Math.max(0, imArr.data[i + channel] - theshold)
+        imArr.data[i + channel] = Math.max(0, imArr.data[i + channel] - threshold)
         pos[0] = fx
         pos[1] = fy
         penDown = true
