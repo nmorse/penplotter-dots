@@ -5,8 +5,9 @@
 
 <body>
   <div>
-    <input style="width: 40px" type="number" value="128" id="threshold" name="threshold" />
-    <input style="width: 40px" type="number" value="64" id="stepsize" name="stepsize" />
+    <input style="width: 50px" type="number" value="220" id="threshold" name="threshold" />
+    <input style="width: 50px" type="number" value="110" id="stepsize" name="stepsize" />
+    <label for="scale">scale</label><input style="width: 50px" type="number" value="4" id="scale" name="scale" />
     <input type="file" accept="image/*" name="image" id="file" onchange="loadFile(event)" style="display: none;">
     <label for="file" style="cursor: pointer;">Upload Image</label>
     <img id="output" width="604" height="386" />
@@ -119,6 +120,7 @@
   image.onload = () => {
     const stepsize = parseInt(document.getElementById('stepsize').value, 10)
     const threshold = parseInt(document.getElementById('threshold').value, 10)
+    const scale = parseInt(document.getElementById('scale').value, 10)
     const sw = image.width
     const sh = image.height
     width = sw
@@ -129,9 +131,9 @@
     ctx.drawImage(image, 0, 0, sw, sh)
 
     const imageData = ctx.getImageData(0, 0, sw, sh);
-    findaway(imageData, threshold, stepsize, 0)
-    findaway(imageData, threshold, stepsize, 1)
-    findaway(imageData, threshold, stepsize, 2)
+    findaway(imageData, threshold, stepsize, 0, scale)
+    findaway(imageData, threshold, stepsize, 1, scale)
+    findaway(imageData, threshold, stepsize, 2, scale)
     //floydSteinbergDithering(imageData, sw, sh);
     ctx.putImageData(imageData, 0, 0);
   };
@@ -324,7 +326,7 @@
     return [-1, -1, false]
   }
 
-  const findaway = (imArr, threshold, stepsize, channel) => {
+  const findaway = (imArr, threshold, stepsize, channel, scale) => {
     penDown = false
     keepGoing = true
     let rounds = 1000000
@@ -339,10 +341,10 @@
           continue
         }
         if (flow) {
-          lineExtend(nx * 2, ny * 2)  
+          lineExtend(nx * scale, ny * scale)  
         }
         else {
-          lineCorner(nx * 2, ny * 2)
+          lineCorner(nx * scale, ny * scale)
         }
         const i = getIndex(pos[0], pos[1])
         imArr.data[i + channel] = Math.min(255, imArr.data[i + channel] + stepsize)
@@ -355,7 +357,7 @@
           keepGoing = false
           break
         }
-        lineInit(fx * 2, fy * 2)
+        lineInit(fx * scale, fy * scale)
         const i = getIndex(fx, fy)
         imArr.data[i + channel] = Math.min(255, imArr.data[i + channel] + stepsize)
         pos[0] = fx
