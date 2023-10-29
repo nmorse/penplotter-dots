@@ -11,7 +11,7 @@
     <label for="file" style="cursor: pointer;">Upload Image</label>
     <img id="output" width="604" height="386" />
     <canvas id="canvas" width="151" height="95.5"></canvas>
-    <svg style="background-color:#fff; stroke-linecap:round; stroke-linejoin:round; stroke-width:0.5;" width="604"
+    <svg style="background-color:#fff; stroke-linecap:round; stroke-linejoin:round; stroke-width:1;" width="604"
       height="386" xmlns="http://www.w3.org/2000/svg">
       <g id="0-registration" inkscape:label="0-registration" inkscape:groupmode="layer" stroke="black" fill="none">
         <path d="M0.5 0.5 L603 0.5 L603 385 L0.5 385 L0.5 0.5" />
@@ -112,7 +112,7 @@
     image.src = URL.createObjectURL(event.target.files[0]);
     var imageEle = document.getElementById('output');
     imageEle.src = URL.createObjectURL(event.target.files[0]);
-    //console.log(event.target.files[0])
+    // console.log(event.target.files[0])
     fileName = event.target.files[0].name.slice(0, event.target.files[0].name.indexOf('.'))
     console.log(fileName)
   };
@@ -123,10 +123,10 @@
     const sh = image.height
     width = sw
     height = sh
-    // canvas.width = 320 //image.width;
-    // canvas.height = 180//image.height;
-    // width="604" height="386"
-    ctx.drawImage(image, 0, 0, sw, sh)//, 640, 360);
+    canvas.width = sw
+    canvas.height = sh
+    // size for the miniKit2 width="604" height="386"
+    ctx.drawImage(image, 0, 0, sw, sh)
 
     const imageData = ctx.getImageData(0, 0, sw, sh);
     findaway(imageData, threshold, stepsize, 0)
@@ -163,7 +163,7 @@
 
   const lineComplete = (group) => {
     if (linePts.length < 1) return
-    if (linePts.length < 2) addDot(group, linePts[0][0], linePts[0][1], 1)
+    if (linePts.length < 2) return // addDot(group, linePts[0][0], linePts[0][1], 1)
     let line = document.createElementNS('http://www.w3.org/2000/svg', 'path')
     const firstPt = linePts.shift()
     line.setAttribute('d', `M${firstPt[0]} ${firstPt[1]} ${linePts.map(toSVG)}`);
@@ -209,7 +209,7 @@
         return [x, y]
       }
     }
-    console.log("findFirst failed random")
+    // console.log("findFirst failed random")
     for (x = 0; x < width; x++) {
       for (y = 0; y < height; y++) {
         const i = getIndex(x, y)
@@ -218,7 +218,7 @@
           return [x, y]
       }
     }
-    console.log("findFirst failed exaustive")
+    // console.log("findFirst failed exaustive")
     return [-1, -1];
   }
 
@@ -327,7 +327,7 @@
   const findaway = (imArr, threshold, stepsize, channel) => {
     penDown = false
     keepGoing = true
-    let rounds = 10000
+    let rounds = 1000000
     while (keepGoing && rounds > 0) {
       rounds--
       if (penDown) {
@@ -335,7 +335,7 @@
         if (nx < 0 || ny < 0) {
           lineComplete(svgGroup[channel])
           penDown = false
-          //console.log("line done at", pos)
+          // console.log("line done at", pos)
           continue
         }
         if (flow) {
@@ -363,6 +363,7 @@
         penDown = true
       }
     }
+    console.log("unused rounds", rounds)
   }
 </script>
 
