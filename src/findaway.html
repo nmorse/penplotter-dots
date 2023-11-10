@@ -181,7 +181,7 @@
     const svgtext = svg.outerHTML;
     if (svgtext) {
       const blob = new Blob([svgtext], { type: "image/svg+xml" });
-      downloadBlob(blob, `dither_dots_${fileName}.svg`);
+      downloadBlob(blob, `findaway01_${fileName}.svg`);
     }
   };
   function downloadBlob(blob, filename) {
