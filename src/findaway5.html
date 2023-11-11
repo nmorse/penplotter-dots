@@ -35,10 +35,10 @@
   let pos = [0, 0];
   let dpos = [1, 0];
   let penDown = false
-  // const xLines = 73 // given a physical pen width and a miniKit 2 axidraw plotter
-  // const yLines = 45 // given a physical pen width and a miniKit 2 axidraw plotter
-  const xLines = 73 * 2
-  const yLines = 45 * 2
+  const xLines = 73 // given a physical pen width and a miniKit 2 axidraw plotter
+  const yLines = 45 // given a physical pen width and a miniKit 2 axidraw plotter
+  // const xLines = 73 * 2
+  // const yLines = 45 * 2
 
   let width = 0 // get from image size once loaded
   let height = 0
@@ -70,7 +70,7 @@
     scale = Math.floor((image.width / xLines))
     console.log("scale", scale, scale/4)
     const svgEle = document.getElementById('svg1')
-    svgEle.setAttribute("style", `background-color:#fff; stroke-linecap:round; stroke-linejoin:round; stroke-width:${xLines/604};`)
+    svgEle.setAttribute("style", `background-color:#fff; stroke-linecap:round; stroke-linejoin:round; stroke-width:${xLines/604*8};`)
     const sw = image.width
     const sh = image.height
     width = sw
@@ -288,10 +288,10 @@
           continue
         }
         if (flow) {
-          lineExtend(nx/scale*4 + xoff, ny/scale*4 + yoff)
+          lineExtend(nx/scale*8 + xoff, ny/scale*8 + yoff)
         }
         else {
-          lineCorner(nx/scale*4 + xoff, ny/scale*4 + yoff)
+          lineCorner(nx/scale*8 + xoff, ny/scale*8 + yoff)
         }
         const i = getIndex(pos[0] + xoff, pos[1] + yoff)
         imArr.data[i + channel] = Math.min(255, imArr.data[i + channel] + stepsize)
@@ -304,7 +304,7 @@
           keepGoing = false
           break
         }
-        lineInit(fx/scale*4 + xoff, fy/scale*4 + yoff)
+        lineInit(fx/scale*8 + xoff, fy/scale*8 + yoff)
         const i = getIndex(fx, fy)
         imArr.data[i + channel] = Math.min(255, imArr.data[i + channel] + stepsize)
         pos[0] = fx // - xoff
