@@ -35,76 +35,19 @@
   let pos = [0, 0];
   let dpos = [1, 0];
   let penDown = false
-  const xLines = 73
-  const yLines = 45
-  const r = 5;
+  // const xLines = 73 // given a physical pen width and a miniKit 2 axidraw plotter
+  // const yLines = 45 // given a physical pen width and a miniKit 2 axidraw plotter
+  const xLines = 73 * 2
+  const yLines = 45 * 2
+
   let width = 0 // get from image size once loaded
   let height = 0
+  // since images are stored as a 1D array of R G B Alpha we get the index of a pixel at (x,y)
   const getIndex = (x, y) => (y * width + x) * 4;
   let svgGroup = []
   svgGroup[2] = document.getElementById('1-yellow')
   svgGroup[1] = document.getElementById('2-magenta')
   svgGroup[0] = document.getElementById('3-cyan')
-  function floydSteinbergDithering(imageData, width, height) {
-    const imageDataCopy = new ImageData(new Uint8ClampedArray(imageData.data), width, height);
-
-    for (let y = 0; y < height; y += scale) {
-      for (let x = 0; x < width; x += scale) {
-        const index = getIndex(x, y)
-        const oldR = imageDataCopy.data[index];
-        const oldG = imageDataCopy.data[index + 1];
-        const oldB = imageDataCopy.data[index + 2];
-
-        // Find the closest color (0 or 255) for each channel
-        const newR = oldR > 128 ? 255 : 0;
-        const newG = oldG > 128 ? 255 : 0;
-        const newB = oldB > 128 ? 255 : 0;
-
-        // Set the new color
-        imageData.data[index] = newR;
-        imageData.data[index + 1] = newG;
-        imageData.data[index + 2] = newB;
-        if (!newR) {
-          addDot(svgGroup[0], x * 4 + 2, y * 4 + 4, 1) // sqrcolor(512 - oldR) / 256)
-        }
-        if (!newG) {
-          addDot(svgGroup[1], x * 4 + 2, y * 4 + 4, 1) // sqrcolor(512 - oldG) / 256)
-        }
-        if (!newB) {
-          addDot(svgGroup[2], x * 4 + 2, y * 4 + 4, 1) // sqrcolor(512 - oldB) / 256)
-        }
-
-        // Calculate the error
-        const errorR = oldR - newR;
-        const errorG = oldG - newG;
-        const errorB = oldB - newB;
-
-        // Distribute the error to neighboring pixels
-        if (x + 1 < width) {
-          distributeError(imageDataCopy, width, x + 1, y, errorR, errorG, errorB, 7 / 16);
-        }
-        if (x - 1 >= 0 && y + 1 < height) {
-          distributeError(imageDataCopy, width, x - 1, y + 1, errorR, errorG, errorB, 3 / 16);
-        }
-        if (y + 1 < height) {
-          distributeError(imageDataCopy, width, x, y + 1, errorR, errorG, errorB, 5 / 16);
-        }
-        if (x + 1 < width && y + 1 < height) {
-          distributeError(imageDataCopy, width, x + 1, y + 1, errorR, errorG, errorB, 1 / 16);
-        }
-      }
-    }
-  }
-  const sqrcolor = (n) => {
-    const norm = n / 512
-    return (norm * norm * norm * norm) * 512
-  }
-  function distributeError(imageData, width, x, y, errorR, errorG, errorB, factor) {
-    const index = (y * width + x) * 4;
-    imageData.data[index] = Math.max(0, Math.min(255, imageData.data[index] + errorR * factor));
-    imageData.data[index + 1] = Math.max(0, Math.min(255, imageData.data[index + 1] + errorG * factor));
-    imageData.data[index + 2] = Math.max(0, Math.min(255, imageData.data[index + 2] + errorB * factor));
-  }
 
   const canvas = document.getElementById('canvas');
   const ctx = canvas.getContext('2d');
@@ -124,9 +67,10 @@
     const stepsize = parseInt(document.getElementById('stepsize').value, 10)
     let threshold = parseInt(document.getElementById('threshold').value, 10)
     //scale = parseInt(document.getElementById('scale').value, 10)
-    scale = image.width / xLines
+    scale = Math.floor(image.width / xLines + 1)
+    console.log("scale", scale, 2 / scale)
     const svgEle = document.getElementById('svg1')
-    svgEle.setAttribute("style", `background-color:#fff; stroke-linecap:round; stroke-linejoin:round; stroke-width:${2 / scale};`)
+    svgEle.setAttribute("style", `background-color:#fff; stroke-linecap:round; stroke-linejoin:round; stroke-width:${scale/8};`)
     const sw = image.width
     const sh = image.height
     width = sw
@@ -137,9 +81,9 @@
     ctx.drawImage(image, 0, 0, sw, sh)
 
     const imageData = ctx.getImageData(0, 0, sw, sh);
-    findaway(imageData, threshold, stepsize, 0, width / xLines, 0, 0)
-    findaway(imageData, threshold, stepsize, 1, width / xLines, 2 / 5, 1 / 5)
-    findaway(imageData, threshold, stepsize, 2, width / xLines, 1 / 5, 4 / 5)
+    findaway(imageData, threshold, stepsize, 0, scale, 3, 3)
+    findaway(imageData, threshold, stepsize, 1, scale, 2, 1)
+    findaway(imageData, threshold, stepsize, 2, scale, 1, 4)
     // threshold -= stepsize
     // findaway(imageData, threshold, stepsize, 0, scale, 3, 3)
     // findaway(imageData, threshold, stepsize, 1, scale, 4, 5)
@@ -148,7 +92,7 @@
     //floydSteinbergDithering(imageData, sw, sh);
     ctx.putImageData(imageData, 0, 0);
   };
-  const addDot = (group, cx, cy, r) => {
+  const addDot = (group, cx, cy, _r) => {
     if (r === 0) return;
     let cir = document.createElementNS('http://www.w3.org/2000/svg', 'path')
     // cir.setAttribute('d', `M${cx - r} ${cy - r} L${cx + r} ${cy - r} L${cx + r} ${cy + r} L${cx - r} ${cy + r} L${cx - r} ${cy - r}`);
@@ -172,14 +116,14 @@
     linePts.push([x2, y2])
   }
 
-  const toSVG = (pt) => (`L${pt[0]} ${pt[1]}`)
+  const toSvgLineStr = (pt) => (`L${pt[0]} ${pt[1]}`)
 
   const lineComplete = (group) => {
     if (linePts.length < 1) return
     if (linePts.length < 2) return // addDot(group, linePts[0][0], linePts[0][1], 1)
     let line = document.createElementNS('http://www.w3.org/2000/svg', 'path')
     const firstPt = linePts.shift()
-    line.setAttribute('d', `M${firstPt[0]} ${firstPt[1]} ${linePts.map(toSVG)}`);
+    line.setAttribute('d', `M${firstPt[0]} ${firstPt[1]} ${linePts.map(toSvgLineStr)}`);
     group.appendChild(line);
     linePts = []
   }
@@ -192,7 +136,7 @@
     const svgtext = svg.outerHTML;
     if (svgtext) {
       const blob = new Blob([svgtext], { type: "image/svg+xml" });
-      downloadBlob(blob, `findaway03_${fileName}.svg`);
+      downloadBlob(blob, `findaway04_${fileName}.svg`);
     }
   };
   function downloadBlob(blob, filename) {
@@ -214,8 +158,8 @@
     let randomTries = 20
     while (randomTries) {
       randomTries--
-      const x = Math.floor(Math.random() * (width - xoff))
-      const y = Math.floor(Math.random() * (height - yoff))
+      const x = Math.floor(Math.random() * (width - xoff) / scale) * scale
+      const y = Math.floor(Math.random() * (height - yoff) / scale) * scale
       const i = getIndex(x + xoff, y + yoff)
       // console.log(i, x, y, channel, imArr.data[i + channel])
       if (imArr.data[i + channel] <= threshold) {
@@ -233,13 +177,6 @@
     }
     // console.log("findFirst failed exaustive")
     return [-1, -1];
-  }
-
-  const alterDir = () => {
-    const alteri = (Math.random() > 0.5) ? 0 : 1;
-    if (dpos[alteri] === 0)
-      dpos[alteri] = (Math.random() > 0.5) ? -1 : 1;
-    else dpos[alteri] = 0
   }
   const inBounds = (x, y) => (x > 0 && y > 0 && x < width && y < height)
   const alterHoriz2 = () => {
@@ -306,11 +243,8 @@
     let ableToFlow = 0
     while (ableToFlow < 12) {
       ableToFlow++
-      // if (Math.random() > 0.95) {
-      //  alterDir()
-      // }
-      let mpx = pos[0] + dpos[0] + xoff
-      let mpy = pos[1] + dpos[1] + yoff
+      let mpx = pos[0] + dpos[0]*scale + xoff
+      let mpy = pos[1] + dpos[1]*scale + yoff
       const i = getIndex(mpx, mpy)
       if (inBounds(mpx, mpy) && imArr.data[i + channel] <= threshold) {
         return [mpx, mpy, (ableToFlow === 1)]
@@ -346,7 +280,7 @@
     while (keepGoing && rounds > 0) {
       rounds--
       if (penDown) {
-        const [nx, ny, flow] = findNext(imArr, threshold, channel, xoff, yoff)
+        const [nx, ny, flow] = findNext(imArr, threshold, channel, 0, 0)
         if (nx < 0 || ny < 0) {
           lineComplete(svgGroup[channel])
           penDown = false
@@ -354,10 +288,10 @@
           continue
         }
         if (flow) {
-          lineExtend(nx * scale, ny * scale)
+          lineExtend(nx, ny)
         }
         else {
-          lineCorner(nx * scale, ny * scale)
+          lineCorner(nx, ny)
         }
         const i = getIndex(pos[0] + xoff, pos[1] + yoff)
         imArr.data[i + channel] = Math.min(255, imArr.data[i + channel] + stepsize)
@@ -365,12 +299,12 @@
         pos[1] = ny - yoff
       }
       else {
-        const [fx, fy] = findFirst(imArr, threshold, channel, xoff, yoff)
+        const [fx, fy] = findFirst(imArr, threshold, channel, 0, 0)
         if (fx < 0 || fy < 0) {
           keepGoing = false
           break
         }
-        lineInit(fx * scale, fy * scale)
+        lineInit(fx, fy)
         const i = getIndex(fx, fy)
         imArr.data[i + channel] = Math.min(255, imArr.data[i + channel] + stepsize)
         pos[0] = fx - xoff
