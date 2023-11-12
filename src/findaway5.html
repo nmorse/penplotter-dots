@@ -293,7 +293,7 @@
         else {
           lineCorner(nx/scale*8 + xoff, ny/scale*8 + yoff)
         }
-        const i = getIndex(pos[0] + xoff, pos[1] + yoff)
+        const i = getIndex(pos[0], pos[1])
         imArr.data[i + channel] = Math.min(255, imArr.data[i + channel] + stepsize)
         pos[0] = nx //  - xoff
         pos[1] = ny // - yoff
