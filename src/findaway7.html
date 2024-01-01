@@ -1,9 +1,6 @@
 <html doctype="html5">
-  
-
 <head>
 </head>
-
 <body>
   <div>
     <input style="width: 50px" type="number" value="64" id="threshold" name="threshold" />
@@ -56,6 +53,7 @@
   const ctx = canvas.getContext('2d');
   let fileName = ''
   let scale = null
+  let threshold = 128 // update after image loads
 
   const image = new Image();
   var loadFile = function (event) {
@@ -67,7 +65,7 @@
     console.log(fileName)
   };
   image.onload = () => {
-    let threshold = parseInt(document.getElementById('threshold').value, 10)
+    threshold = parseInt(document.getElementById('threshold').value, 10)
     const stepsize = parseInt(document.getElementById('stepsize').value, 10)
     //scale = parseInt(document.getElementById('scale').value, 10)
     scale = Math.floor((604 / xLines))
@@ -235,7 +233,7 @@
       for (y = pos[1] - 1; y < pos[1] + 1; y += scale) {
         if (inBounds(x, y)) {
           const i = getIndex(x, y)
-          if (imArr[i + channel] <= threshold) {
+          if (imArr.data[i + channel] <= threshold) {
             neighbors++
             lastX = x
             lastY = y
